@@ -33,14 +33,15 @@ flowchart TB
     subgraph PiProc["pi --mode rpc (subprocess)"]
         direction TB
         Agent["Agent loop<br/>(reads AGENTS.md)"]
-        Tools["tools: bash / read"]
-        Exts["extensions:<br/>langfuse.ts · openai-eu.ts"]
+        Tools["tools: bash / read /<br/>analyzeAttachment"]
+        Exts["extensions:<br/>langfuse.ts · openai-eu.ts ·<br/>analyze-attachment.ts"]
         Agent --> Tools
         Agent -.-> Exts
     end
 
     Skills[("pi/skills/*.md<br/>shared + per-domain")]
     GQL[("Fabric GraphQL")]
+    FS[("File service")]
     LLM[("OpenAI EU")]
     LF[("Langfuse")]
 
@@ -53,6 +54,8 @@ flowchart TB
 
     Tools -->|"read"| Skills
     Tools -->|"bash curl"| GQL
+    Tools -->|"analyzeAttachment fetch"| FS
+    Tools -.->|"isolated vision call"| LLM
     Agent -->|"LLM request"| LLM
     Exts -.->|"OTel spans"| LF
 ```
@@ -89,6 +92,26 @@ The pi agent itself runs `bash` (for `curl` to GraphQL) and `read` (for
 loading skill files) as tools. It is instructed to produce a single JSON
 object as its final assistant message — no prose, no fences.
 
+## Tools
+
+| Tool                | Kind     | What it does |
+| ------------------- | -------- | ------------ |
+| `bash`              | built-in | Shell. Used for `curl` against Fabric GraphQL (auth + queries documented in the `graphql` skill). |
+| `read`              | built-in | Load a skill file's body. Skills are listed in `<available_skills>`; the agent reads on demand. |
+| `analyzeAttachment` | typed (custom extension) | Fetch case attachments (images) from the file service and extract structured data via an **isolated** vision sub-call. Raw bytes never enter the main agent's context. |
+
+`analyzeAttachment` is registered via `pi.registerTool({...})` in
+`pi/extensions/analyze-attachment.ts` with TypeBox-validated inputs
+(`attachments[]` of `{filename, domain, storage_type, content_type?}` +
+optional `instruction`). Its `execute()` GETs each file from
+`${FILE_SERVICE_BASE_URL}/{domain}/files/{storage_type}/{filename}`, sends
+the bytes to OpenAI with a strict `json_schema` response format
+(`{dataPoints: {label, value}[], interpretation}`), and returns the
+parsed summary as `content` plus structured `details` for traces. PDFs
+are not yet supported (returns a per-file error analysis); images only.
+The tool disables itself cleanly if `FILE_SERVICE_BASE_URL` or
+`OPENAI_API_KEY` is unset.
+
 ## How observability works
 
 Tracing is implemented as a **pi extension**, not as code in the Python
@@ -114,6 +137,9 @@ shows what the agent was *doing*, not just which tool it called.
 A second small extension, `pi/extensions/openai-eu.ts`, registers the EU
 OpenAI endpoint as the `openai` provider so requests stay in-region.
 
+A third extension, `pi/extensions/analyze-attachment.ts`, registers the
+typed `analyzeAttachment` tool (see [Tools](#tools)).
+
 ## Layout
 
 ```
@@ -126,7 +152,8 @@ AGENTS.md            System prompt for the agent (auto-loaded by pi)
 pi/
   settings.json      pi defaults (model, provider, thinking level)
   skills/            Markdown skill files (shared + per-domain)
-  extensions/        TypeScript pi extensions (langfuse, openai-eu)
+  extensions/        TypeScript pi extensions (langfuse, openai-eu,
+                     analyze-attachment)
 Dockerfile           Python + Node + pi CLI + extensions
 docker-compose.yml   Bind-mounts repo into /workspace, exposes :6006
 Makefile             build / up / down / sh / logs
@@ -135,7 +162,8 @@ Makefile             build / up / down / sh / logs
 ## Running
 
 ```bash
-cp .env.example .env   # fill in OpenAI, Langfuse, Fabric creds
+cp .env.example .env   # fill in OpenAI, Langfuse, Fabric creds,
+                       # and FILE_SERVICE_BASE_URL for analyzeAttachment
 make build
 make up
 curl -s localhost:6006/health
