@@ -5,3 +5,6 @@ pi/extensions/package-lock.json
 __pycache__/
 *.pyc
 .venv
+
+# Domain-specific skills (per-brand content, not for public repo)
+pi/skills/domains/

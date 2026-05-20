@@ -21,6 +21,11 @@ You have access to:
 - bash (use `curl` for HTTP / GraphQL calls)
 - a GraphQL data source documented in the loaded skill (`graphql`). Read it
   before querying. Use only the env vars and queries it documents.
+- a domain-specific tone-of-voice skill (loaded only if one exists for this
+  case's domain). Apply it ONLY when drafting the `body` of a SEND_REPLY
+  action proposal. RESOLVE_CASE proposals have no body — tone rules do not
+  apply to them, and you should not consult the tone skill at all when
+  recommending a RESOLVE_CASE.
 
 Investigation guidelines:
 - Read the case activities to understand the customer's intent.

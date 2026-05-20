@@ -1,4 +1,5 @@
 import json
+import os
 import re
 
 from fastapi import FastAPI, HTTPException
@@ -11,6 +12,10 @@ from pi_harness import run_pi
 app = FastAPI(title="pi-agent-harness")
 
 SKILLS_DIR = "/workspace/pi/skills"
+SHARED_SKILLS = [
+    f"{SKILLS_DIR}/graphql.md",
+    f"{SKILLS_DIR}/response-format.md",
+]
 TIMEOUT_S = 240.0
 
 
@@ -25,7 +30,7 @@ async def investigate_case(snapshot: CaseSnapshot) -> InvestigatePatch:
         prompt=build_prompt(snapshot),
         cwd="/workspace",
         timeout=TIMEOUT_S,
-        extra_args=["--skill", SKILLS_DIR],
+        extra_args=_skill_args(snapshot),
     )
 
     if result.status != "ok":
@@ -48,6 +53,17 @@ async def investigate_case(snapshot: CaseSnapshot) -> InvestigatePatch:
                 "final_text": result.final_text,
             },
         )
+
+
+def _skill_args(snapshot: CaseSnapshot) -> list[str]:
+    """Skills passed to pi: always the shared ones, plus the domain dir if it exists."""
+    args: list[str] = []
+    for path in SHARED_SKILLS:
+        args += ["--skill", path]
+    domain_dir = f"{SKILLS_DIR}/domains/{snapshot.system.domain}"
+    if os.path.isdir(domain_dir):
+        args += ["--skill", domain_dir]
+    return args
 
 
 _FENCE_RE = re.compile(r"```(?:json)?\s*(.+?)\s*```", re.DOTALL)

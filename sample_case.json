@@ -1,6 +1,6 @@
 {
   "system": {
-    "domain": "smoke-test",
+    "domain": "rr",
     "type": "case_snapshot",
     "sourceSystem": "email"
   },
