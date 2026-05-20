@@ -34,6 +34,13 @@ COPY --chown=app:app pi/extensions /home/app/.cache/pi-extensions
 RUN cd /home/app/.cache/pi-extensions && npm install \
   && ln -s /workspace/pi/extensions /home/app/.pi/agent/extensions
 
+# pi packages (user-scoped npm install, no root needed at runtime). `pi install`
+# both fetches the package and adds it to settings.json's `packages` array.
+ENV PATH="/home/app/.npm-global/bin:${PATH}"
+RUN mkdir -p /home/app/.npm-global \
+  && npm config set prefix /home/app/.npm-global \
+  && pi install npm:@hdkiller/pi-langfuse
+
 WORKDIR /workspace
 
 EXPOSE 6006

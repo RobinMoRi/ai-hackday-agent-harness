@@ -1,5 +1,8 @@
 {
   "defaultModel": "gpt-5.4-mini",
   "defaultProvider": "openai",
-  "defaultThinkingLevel": "high"
+  "defaultThinkingLevel": "high",
+  "packages": [
+    "npm:@hdkiller/pi-langfuse"
+  ]
 }

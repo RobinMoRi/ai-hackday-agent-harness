@@ -2,9 +2,6 @@
   "name": "pi-extensions",
   "private": true,
   "type": "module",
-  "dependencies": {
-    "langfuse": "^3.38.0"
-  },
   "devDependencies": {
     "@earendil-works/pi-coding-agent": "*",
     "@types/node": "^20"
