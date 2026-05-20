@@ -38,18 +38,21 @@ def render_snapshot(snapshot: CaseSnapshot) -> str:
 
     payload = {
         "activities": activities,
-        "case_metadata": snapshot.case_metadata.model_dump(by_alias=False, exclude_none=True),
+        "case_metadata": snapshot.case_metadata.model_dump(
+            by_alias=False, exclude_none=True
+        ),
         "classifications": (
             snapshot.classifications.model_dump(by_alias=False, exclude_none=True)
             if snapshot.classifications
             else None
         ),
         "attachments": [
-            a.model_dump(by_alias=False, exclude_none=True) for a in snapshot.attachments
+            a.model_dump(by_alias=False, exclude_none=True)
+            for a in snapshot.attachments
         ],
     }
     return json.dumps(payload, indent=2, default=str)
 
 
 def build_prompt(snapshot: CaseSnapshot) -> str:
-    return f"--- CASE SNAPSHOT ---\n{render_snapshot(snapshot)}"
+    return f"### CASE SNAPSHOT \n\n{render_snapshot(snapshot)}"
