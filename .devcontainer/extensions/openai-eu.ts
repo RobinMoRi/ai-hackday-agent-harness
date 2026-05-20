@@ -1,0 +1,7 @@
+import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
+
+export default function (pi: ExtensionAPI) {
+  pi.registerProvider("openai", {
+    baseUrl: "https://eu.api.openai.com/v1",
+  });
+}

@@ -1,0 +1,4 @@
+.devcontainer/.env
+.devcontainer/extensions/node_modules
+.devcontainer/extensions/package-lock.json
+
