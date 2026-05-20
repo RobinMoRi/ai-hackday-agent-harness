@@ -161,13 +161,6 @@ export default function (pi: ExtensionAPI) {
 }
 
 /**
- * Derive a more meaningful observation name than the raw `toolName`.
- *
- * Pi's `bash` tool is a catch-all — calling out "graphql" when the command
- * hits the Fabric endpoint, or showing the leading command word otherwise,
- * makes the trace tree much more readable.
- */
-/**
  * Pi's assistant message content is an array of typed blocks
  * (`thinking`, `text`, …). For trace I/O we only want the human-readable
  * final answer, so concatenate the `text` blocks.
@@ -186,18 +179,47 @@ function extractText(content: unknown): unknown {
   return content;
 }
 
+/**
+ * Derive a more meaningful observation name than the raw `toolName`.
+ *
+ * Pi's `bash` tool is a catch-all (curl for GraphQL, file ops, etc.) and
+ * `read` is most often a skill load — label both with a `<tool>:<what>`
+ * suffix so the trace tree reads as intent, not mechanism.
+ */
 function describeToolCall(event: any): string {
   const name = String(event?.toolName ?? "tool");
   const args = event?.args;
+
   if (name === "bash" && args && typeof args === "object") {
     const cmd: unknown = args.command ?? args.cmd ?? args.script;
     if (typeof cmd === "string") {
       const trimmed = cmd.trim();
-      if (/graphql/i.test(trimmed) || /fabric\.microsoft/i.test(trimmed)) return "graphql";
-      if (/login\.microsoftonline\.com.*oauth2.*token/i.test(trimmed)) return "fabric:auth";
+      if (/login\.microsoftonline\.com.*oauth2.*token/i.test(trimmed)) return "bash:fabric-auth";
+      if (/graphql/i.test(trimmed) || /fabric\.microsoft/i.test(trimmed)) return "bash:graphql";
       const firstWord = trimmed.split(/\s+/)[0]?.replace(/^\W+/, "") || "bash";
       return `bash:${firstWord}`;
     }
   }
+
+  if (name === "read" && args && typeof args === "object") {
+    const skill = skillNameFromPath((args as any).path);
+    if (skill) return `read:${skill}`;
+  }
+
   return name;
+}
+
+/**
+ * Extract a skill name from a `read` path. Skills live under pi/skills/;
+ * `SKILL.md` inherits its name from the parent directory, other .md files
+ * use their basename. Non-skill paths return undefined.
+ */
+function skillNameFromPath(p: unknown): string | undefined {
+  if (typeof p !== "string") return undefined;
+  const m = p.match(/\/pi\/skills\/(.+)$/);
+  if (!m) return undefined;
+  const segments = m[1].split("/");
+  const last = segments[segments.length - 1] ?? "";
+  if (last === "SKILL.md") return segments[segments.length - 2];
+  return last.replace(/\.md$/, "");
 }
