@@ -37,6 +37,7 @@ def render_snapshot(snapshot: CaseSnapshot) -> str:
         activities.append(d)
 
     payload = {
+        "domain": snapshot.system.domain,
         "activities": activities,
         "case_metadata": snapshot.case_metadata.model_dump(
             by_alias=False, exclude_none=True
