@@ -8,3 +8,6 @@ __pycache__/
 
 # Domain-specific skills (per-brand content, not for public repo)
 pi/skills/domains/
+
+# Local smoke-test fixture
+sample_case.json
