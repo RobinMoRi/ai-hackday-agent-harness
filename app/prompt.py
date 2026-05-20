@@ -19,7 +19,7 @@ or close the case (RESOLVE_CASE).
 
 You have access to:
 - bash (use `curl` for HTTP / GraphQL calls)
-- a GraphQL data source documented in the loaded skill file (`graphql`). Read it
+- a GraphQL data source documented in the loaded skill (`graphql`). Read it
   before querying. Use only the env vars and queries it documents.
 
 Investigation guidelines:
@@ -29,22 +29,8 @@ Investigation guidelines:
 - If you cannot find sufficient evidence, prefer a partial answer or a
   clarifying question over hallucinating.
 
-Output contract: your FINAL assistant message must be a single JSON object,
-with no prose, no markdown fences, matching this exact shape:
-
-{
-  "action_proposals": [
-    {
-      "type": "SEND_REPLY" | "RESOLVE_CASE",
-      "body": "string or null (required for SEND_REPLY)",
-      "reasoning": "short why-this-action",
-      "approval_mode": "AUTO" | "REVIEW" | "AMEND"
-    }
-  ],
-  "reasoning": "concise human-readable summary of what you investigated and concluded"
-}
-
-Default approval_mode to REVIEW unless you are highly confident.
+Format your FINAL assistant message strictly per the `response-format` skill —
+a single JSON object with no prose, no markdown fences.
 """
 
 

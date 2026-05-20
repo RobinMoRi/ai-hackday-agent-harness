@@ -10,7 +10,7 @@ from pi_harness import run_pi
 
 app = FastAPI(title="pi-agent-harness")
 
-SKILL_PATH = "/workspace/pi/skills/graphql.md"
+SKILLS_DIR = "/workspace/pi/skills"
 TIMEOUT_S = 240.0
 
 
@@ -25,7 +25,7 @@ async def investigate_case(snapshot: CaseSnapshot) -> InvestigatePatch:
         prompt=build_prompt(snapshot),
         cwd="/workspace",
         timeout=TIMEOUT_S,
-        extra_args=["--skill", SKILL_PATH],
+        extra_args=["--skill", SKILLS_DIR],
     )
 
     if result.status != "ok":
