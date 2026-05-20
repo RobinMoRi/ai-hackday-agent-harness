@@ -2,6 +2,9 @@
 
 build:
 	docker compose build
+	docker compose run --rm --no-deps api sh -c \
+	  'rm -rf /workspace/pi/extensions/node_modules && \
+	   cp -r /home/app/.cache/pi-extensions/node_modules /workspace/pi/extensions/node_modules'
 
 up:
 	docker compose up -d

@@ -7,7 +7,16 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   && apt-get install -y --no-install-recommends nodejs \
   && rm -rf /var/lib/apt/lists/*
 
-RUN useradd -m -u 1000 -s /bin/bash app
+# uv for Python package management
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /usr/local/bin/
+
+# Python deps (installed system-wide while still root)
+COPY pyproject.toml /tmp/pyproject.toml
+RUN uv pip install --system --no-cache -r /tmp/pyproject.toml && rm /tmp/pyproject.toml
+
+RUN useradd -m -u 1000 -s /bin/bash app \
+  && mkdir -p /workspace /home/app/.pi/agent \
+  && chown -R app:app /workspace /home/app/.pi
 USER app
 WORKDIR /home/app
 
@@ -15,14 +24,18 @@ WORKDIR /home/app
 RUN curl -fsSL https://pi.dev/install.sh | sh
 ENV PATH="/home/app/.local/bin:${PATH}"
 
-# Bake pi runtime config (settings + extensions) into ~/.pi/agent
+# pi settings
 COPY --chown=app:app pi/settings.json /home/app/.pi/agent/settings.json
-COPY --chown=app:app pi/extensions /home/app/.pi/agent/extensions
-RUN cd /home/app/.pi/agent/extensions && npm install --omit=dev
+
+# Install pi extensions into a non-bind-mounted cache path so the build
+# survives the bind mount at /workspace; `make build` copies node_modules
+# from this cache to the host so the IDE sees them too.
+COPY --chown=app:app pi/extensions /home/app/.cache/pi-extensions
+RUN cd /home/app/.cache/pi-extensions && npm install \
+  && ln -s /workspace/pi/extensions /home/app/.pi/agent/extensions
 
 WORKDIR /workspace
 
 EXPOSE 6006
 
-# Idle by default. The FastAPI app will replace this via compose `command:`.
-CMD ["sleep", "infinity"]
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "6006"]
