@@ -1,0 +1,10 @@
+services:
+  api:
+    build: .
+    container_name: pi-agent-harness
+    env_file: .env
+    ports:
+      - "6006:6006"
+    volumes:
+      - ./:/workspace
+    working_dir: /workspace

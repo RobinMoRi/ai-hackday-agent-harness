@@ -1,4 +1,7 @@
-.devcontainer/.env
-.devcontainer/extensions/node_modules
-.devcontainer/extensions/package-lock.json
-
+.env
+node_modules
+pi/extensions/node_modules
+pi/extensions/package-lock.json
+__pycache__/
+*.pyc
+.venv

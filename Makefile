@@ -1,27 +1,22 @@
-.PHONY: build start up pi down clean nuke
-
-WORKSPACE := $(CURDIR)
-
-# Requires @devcontainers/cli: npm install -g @devcontainers/cli
+.PHONY: build up down sh pi logs clean
 
 build:
-	devcontainer build --workspace-folder $(WORKSPACE)
+	docker compose build
 
-start:
-	devcontainer up --workspace-folder $(WORKSPACE)
-
-up: start
-	devcontainer exec --workspace-folder $(WORKSPACE) bash
-
-pi: start
-	devcontainer exec --workspace-folder $(WORKSPACE) pi
+up:
+	docker compose up -d
 
 down:
-	docker ps -q --filter "label=devcontainer.local_folder=$(WORKSPACE)" | xargs -r docker stop
+	docker compose down
 
-clean: down
-	docker ps -aq --filter "label=devcontainer.local_folder=$(WORKSPACE)" | xargs -r docker rm
+sh:
+	docker compose exec api bash
 
-nuke: clean
-	docker images -q --filter "reference=vsc-ai-hackday-agent-harness-*" | xargs -r docker rmi -f
-	docker volume rm -f pi-config pi-home
+pi:
+	docker compose exec api pi
+
+logs:
+	docker compose logs -f
+
+clean:
+	docker compose down -v --rmi local
