@@ -1,8 +1,9 @@
 """Prompt construction for /investigateCase.
 
-Single-stage MVP: one Solution-style instruction set, snapshot rendered
-inline as JSON. The agent has bash + the GraphQL skill markdown; it
-decides whether and how to query.
+Per-request user message is just the snapshot. All standing instructions
+(agent role, skill usage rules, investigation guidelines, output contract
+pointer) live in /workspace/AGENTS.md, which pi auto-discovers and merges
+into the system prompt.
 """
 
 from __future__ import annotations
@@ -11,32 +12,6 @@ import json
 from datetime import datetime, timezone
 
 from app.schema.case_snapshot import CaseSnapshot
-
-SYSTEM_INSTRUCTIONS = """\
-You are a case investigation agent. You receive a CaseSnapshot and must decide
-what action to propose: either reply to the customer (SEND_REPLY with a body)
-or close the case (RESOLVE_CASE).
-
-You have access to:
-- bash (use `curl` for HTTP / GraphQL calls)
-- a GraphQL data source documented in the loaded skill (`graphql`). Read it
-  before querying. Use only the env vars and queries it documents.
-- a domain-specific tone-of-voice skill (loaded only if one exists for this
-  case's domain). Apply it ONLY when drafting the `body` of a SEND_REPLY
-  action proposal. RESOLVE_CASE proposals have no body — tone rules do not
-  apply to them, and you should not consult the tone skill at all when
-  recommending a RESOLVE_CASE.
-
-Investigation guidelines:
-- Read the case activities to understand the customer's intent.
-- If the case requires data from the GraphQL source to answer, query it.
-- Ground your draft reply in evidence you actually retrieved; do not invent facts.
-- If you cannot find sufficient evidence, prefer a partial answer or a
-  clarifying question over hallucinating.
-
-Format your FINAL assistant message strictly per the `response-format` skill —
-a single JSON object with no prose, no markdown fences.
-"""
 
 
 def _ms_to_iso(ms: int | None) -> str | None:
@@ -77,4 +52,4 @@ def render_snapshot(snapshot: CaseSnapshot) -> str:
 
 
 def build_prompt(snapshot: CaseSnapshot) -> str:
-    return f"{SYSTEM_INSTRUCTIONS}\n\n--- CASE SNAPSHOT ---\n{render_snapshot(snapshot)}"
+    return f"--- CASE SNAPSHOT ---\n{render_snapshot(snapshot)}"
